@@ -1,0 +1,4 @@
+ember -new eventful
+cd eventful
+ember server
+  // errors

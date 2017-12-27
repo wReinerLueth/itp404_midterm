@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 75%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <script src="jquery-3.2.1.js"></script>
+  <script src="handlebars-v4.0.10.js"></script>
+  <script src="main.js"></script>
+  <body>
+    <div id="map"></div>
+    <div id="main">
+      <h1>Couldn't get it</h1>
+    </div>
+
+
+    <template id="venue-template" type="text/x-handlebars-template">
+          {{#each venue}}
+            <div class="venue">
+              <!-- Title and link both print right in <p>
+                   neither work when I use the handlebar helper
+                   which i copied from my assignment 2, which works -->
+              <!-- And now nothing works -->
+              <p>{{title}}</p>
+              <p>{{my_link}}</p>
+              <!-- <a {{{link my_link}}} {{title}}</a> -->
+              <p>{{desc}}</p>
+              <p>{{venue}}</p>
+              <p>{{city}}</p>
+              <p>{{country}}</p>
+            </div>
+          {{/each}}
+      </template>
+
+    <script>
+      var map;
+      var marker;
+      var initialPosition;
+      var geocoder;
+      var venueList = [];
+
+
+      // Function name must be the same as google's callback
+      // If change, change both
+      function initMap() {
+
+        geocoder = new google.maps.Geocoder();
+
+        initialPosition = new google.maps.LatLng(34.020638, -118.288789);
+
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: initialPosition,
+          zoom: 2
+        });
+
+        $.ajax({
+          type: 'GET',
+          url: 'https://api-eventful.herokuapp.com/api/events?keywords=stone+sour'
+        }).then(function(response){
+
+          $.each(response, function(i){
+            let tempPosition = new google.maps.LatLng(response[i].latitude, response[i].longitude);
+            let date = new Date(response[i].start_time);
+            let city = response[i].city_name;
+            let fullDate = date.getMonth()+'/'+date.getDate()+'/'+date.getFullYear();
+            let title = response[i].title;
+            let link = response[i].url;
+            let desc = response[i].description;
+            let venue = response[i].venue_address;
+            let country = response[i].country_abbr;
+
+            marker = new google.maps.Marker({
+              map: map,
+              position: tempPosition
+            });
+
+            let batch = {
+              title : link,
+              my_link : link,
+              desc : desc,
+              venue : venue,
+              city : city,
+              country : country
+            }
+            venueList.push(batch);
+          });
+
+          let venueTemplate = $('#venue-template').html();
+          let renderVenues = Handlebars.compile(venueTemplate);
+
+          $(function(){
+              Handlebars.registerHelper('link', function(my_link) {
+              var url = Handlebars.escapeExpression(my_link);
+              var result = "href='" + url + "'>";
+              console.log(result);  // This never printed anything to the console
+              return new Handlebars.SafeString(result);
+            });
+          });
+
+          function renderVenueList() {
+            let venueHTML = renderVenues({
+              venue: venueList
+            });
+            $('#main').html(venueHTML);
+          }
+          console.log(venueList);
+          renderVenueList();
+        });
+      }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAZxDjGvMuHtuj4s1HUmyiYI20f_uJ_bGU&callback=initMap"
+    async defer></script>
+  </body>
+</html>
